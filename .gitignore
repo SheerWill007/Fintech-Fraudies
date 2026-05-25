@@ -1,0 +1,22 @@
+node_modules
+dist
+.next
+.turbo
+*.log
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+.venv
+__pycache__
+*.py[cod]
+*.egg-info
+
+# IDE
+.idea
+.vscode

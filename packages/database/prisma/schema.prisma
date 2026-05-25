@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  ANALYST
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(USER)
+  firstName    String?
+  lastName     String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+}
+
+model Transaction {
+  id                 String            @id @default(uuid())
+  userId             String
+  amount             Decimal           @db.Decimal(10, 2)
+  currency           String            @default("USD")
+  status             TransactionStatus @default(PENDING)
+  type               TransactionType
+  destinationAccount String?           // e.g., IBAN or internal account ID
+  
+  // Fraud detection fields
+  ipAddress          String?
+  deviceId           String?
+  latitude           Float?
+  longitude          Float?
+  riskScore          Float?            // Assigned by ML engine
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g., "LOGIN_ATTEMPT", "TRANSACTION_FLAGGED"
+  entityType  String   // e.g., "USER", "TRANSACTION"
+  entityId    String
+  userId      String?  // Who performed the action (if applicable)
+  details     Json     // Flexible payload for the log details
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+
+// ============================================================
+// packages/ui
+// ============================================================

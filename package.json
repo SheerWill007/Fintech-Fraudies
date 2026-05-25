@@ -1,0 +1,29 @@
+{
+  "name": "fintech-fraudies-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.14.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --filter=web --filter=api",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:all": "turbo run dev --filter=./apps/*",
+    "lint": "turbo run lint",
+    "db:generate": "cd packages/database && npx prisma generate",
+    "db:migrate": "cd packages/database && npx prisma migrate dev",
+    "db:studio": "cd packages/database && npx prisma studio",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
