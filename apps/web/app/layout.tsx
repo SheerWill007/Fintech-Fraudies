@@ -5,9 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Fora — Your community deserves its own home",
-  description:
-    "Fora gives creators, educators, and coaches a fully branded space with courses, events, discussions, and members.",
+  title: "Asme | Know it then all",
+  description: "Discover ideas, insight, and creative vision with Asme.",
 };
 
 export default function RootLayout({
