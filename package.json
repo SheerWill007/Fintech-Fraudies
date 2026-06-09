@@ -1,26 +1,24 @@
 {
-  "name": "fintech-fraudies-monorepo",
+  "name": "fintech-fraudies",
   "version": "1.0.0",
   "private": true,
   "packageManager": "npm@11.14.1",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev --filter=web --filter=api",
-    "dev:web": "npm run dev --workspace=web",
-    "dev:all": "turbo run dev --filter=./apps/*",
-    "lint": "turbo run lint",
-    "db:generate": "cd packages/database && npx prisma generate",
-    "db:migrate": "cd packages/database && npx prisma migrate dev",
-    "db:studio": "cd packages/database && npx prisma studio",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend/api && npm run dev",
+    "dev:ml": "cd backend/ml-engine && .venv\\Scripts\\activate && uvicorn app.main:app --reload --port 8000",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend/api && npm run build",
+    "start:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend/api && npm start",
+    "db:generate": "cd backend/database && npx prisma generate",
+    "db:migrate": "cd backend/database && npx prisma migrate dev",
+    "db:studio": "cd backend/database && npx prisma studio",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend/api && npm install"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },
   "engines": {

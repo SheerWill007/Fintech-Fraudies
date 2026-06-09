@@ -29,6 +29,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20",
     "@types/passport-jwt": "^4.0.0",
+    "prisma": "^5.10.0",
     "typescript": "^5"
   }
 }
