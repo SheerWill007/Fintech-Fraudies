@@ -7,8 +7,6 @@ import { RegisterDto, LoginDto } from './auth.dto';
 interface IUser {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
   role: string;
 }
 
@@ -41,8 +39,6 @@ export class AuthService {
       data: {
         email: data.email,
         passwordHash: hashedPassword,
-        firstName: data.firstName,
-        lastName: data.lastName,
       },
     });
 
@@ -68,8 +64,6 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         role: user.role,
       },
     };

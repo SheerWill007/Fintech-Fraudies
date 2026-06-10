@@ -22,6 +22,7 @@ import { HealthModule } from './health/health.module';
     TransactionsModule,
     AuditModule,
     WebhookModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
