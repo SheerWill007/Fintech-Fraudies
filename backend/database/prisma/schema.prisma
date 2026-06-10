@@ -9,7 +9,6 @@ datasource db {
 }
 
 enum Role {
-  USER
   ADMIN
   ANALYST
 }
@@ -17,66 +16,65 @@ enum Role {
 enum TransactionStatus {
   PENDING
   APPROVED
-  REJECTED
   FLAGGED
 }
 
 enum TransactionType {
-  DEPOSIT
-  WITHDRAWAL
+  PURCHASE
   TRANSFER
+  WITHDRAWAL
+  DEPOSIT
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id           String        @id @default(cuid())
   email        String        @unique
   passwordHash String
-  role         Role          @default(USER)
-  firstName    String?
-  lastName     String?
-  isActive     Boolean       @default(true)
+  role         Role          @default(ANALYST)
   createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
 
   transactions Transaction[]
-  auditLogs    AuditLog[]
 }
 
 model Transaction {
-  id                 String            @id @default(uuid())
-  userId             String
-  amount             Decimal           @db.Decimal(10, 2)
-  currency           String            @default("USD")
-  status             TransactionStatus @default(PENDING)
-  type               TransactionType
-  destinationAccount String?           // e.g., IBAN or internal account ID
-  
-  // Fraud detection fields
-  ipAddress          String?
-  deviceId           String?
-  latitude           Float?
-  longitude          Float?
-  riskScore          Float?            // Assigned by ML engine
+  id          String            @id @default(cuid())
+  userId      String
+  amount      Float
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+  riskScore   Float?
+  riskFactors String[]
+  ipAddress   String?
+  deviceId    String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id])
+  auditLogs   AuditLog[]
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  action      String   // e.g., "LOGIN_ATTEMPT", "TRANSACTION_FLAGGED"
-  entityType  String   // e.g., "USER", "TRANSACTION"
-  entityId    String
-  userId      String?  // Who performed the action (if applicable)
-  details     Json     // Flexible payload for the log details
-  createdAt   DateTime @default(now())
+  id            String            @id @default(cuid())
+  transactionId String
+  statusBefore  TransactionStatus
+  statusAfter   TransactionStatus
+  riskScore     Float
+  actorId       String
+  reason        String?
+  createdAt     DateTime          @default(now())
 
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  transaction   Transaction       @relation(fields: [transactionId], references: [id])
+
+  @@index([transactionId])
+  @@index([createdAt])
 }
 
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  payload     Json
+  source      String?
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
 
-// ============================================================
-// packages/ui
-// ============================================================
+  @@index([createdAt])
+}

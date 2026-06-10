@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Asme | Know it then all",
-  description: "Discover ideas, insight, and creative vision with Asme.",
+  title: "Fraudies — Real-time Fraud Detection Platform",
+  description: "Enterprise fraud monitoring orchestrator and risk assessment engine.",
 };
 
 export default function RootLayout({

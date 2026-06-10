@@ -4,6 +4,9 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { AuditModule } from './audit/audit.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -17,6 +20,8 @@ import { TransactionsModule } from './transactions/transactions.module';
     PrismaModule,
     AuthModule,
     TransactionsModule,
+    AuditModule,
+    WebhookModule,
   ],
 })
 export class AppModule {}

@@ -2,40 +2,79 @@
 
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { Search, Filter, MoreVertical, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
-import { fetchTransactions } from '@/lib/api';
+import { Search, Filter, ArrowUpRight, Plus, RefreshCw, X } from 'lucide-react';
+import { fetchTransactions, createTransaction, Transaction } from '@/lib/api-client';
+import { formatAmount, formatDate, getStatusBadgeClass } from '@/lib/formatters';
 
-// Mock initial data as fallback
-const initialTransactions = [
-  { id: 'TX-9821', amount: 1250.00, status: 'completed', date: '2026-05-14T08:15:00', merchant: 'Apple Store', type: 'debit' },
-  { id: 'TX-9822', amount: 45.00, status: 'pending', date: '2026-05-14T08:12:00', merchant: 'Starbucks', type: 'debit' },
-  { id: 'TX-9823', amount: 5000.00, status: 'flagged', date: '2026-05-14T08:05:00', merchant: 'Unknown Crypto Ex', type: 'debit' },
-  { id: 'TX-9824', amount: 3200.50, status: 'completed', date: '2026-05-14T07:45:00', merchant: 'Salary Deposit', type: 'credit' },
-  { id: 'TX-9825', amount: 120.99, status: 'completed', date: '2026-05-14T07:30:00', merchant: 'Amazon', type: 'debit' },
-  { id: 'TX-9826', amount: 15.50, status: 'failed', date: '2026-05-14T07:15:00', merchant: 'Netflix', type: 'debit' },
+const initialTransactions: Transaction[] = [
+  { 
+    id: 'TX-9821', 
+    userId: 'user1',
+    amount: 9500.00, 
+    type: 'TRANSFER', 
+    status: 'FLAGGED', 
+    riskScore: 0.85, 
+    riskFactors: ['Large transaction amount ($9,500.00)', 'High-risk transaction type (TRANSFER)'], 
+    ipAddress: '185.220.101.5', 
+    deviceId: 'new_device_001', 
+    createdAt: new Date(Date.now() - 300000).toISOString(),
+    updatedAt: new Date(Date.now() - 300000).toISOString(),
+  },
+  { 
+    id: 'TX-9822', 
+    userId: 'user1',
+    amount: 120.00, 
+    type: 'PURCHASE', 
+    status: 'APPROVED', 
+    riskScore: 0.10, 
+    riskFactors: [], 
+    ipAddress: '192.168.1.5', 
+    deviceId: 'device_998', 
+    createdAt: new Date(Date.now() - 600000).toISOString(),
+    updatedAt: new Date(Date.now() - 600000).toISOString(),
+  },
+  { 
+    id: 'TX-9823', 
+    userId: 'user1',
+    amount: 450.00, 
+    type: 'WITHDRAWAL', 
+    status: 'PENDING', 
+    riskScore: 0.45, 
+    riskFactors: ['High-risk transaction type (WITHDRAWAL)'], 
+    ipAddress: '24.108.92.11', 
+    deviceId: 'device_342', 
+    createdAt: new Date(Date.now() - 900000).toISOString(),
+    updatedAt: new Date(Date.now() - 900000).toISOString(),
+  },
 ];
 
 export default function TransactionsPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initial load animation and data fetching
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await fetchTransactions();
-        setTransactions(data.length > 0 ? data : initialTransactions);
-      } catch (error) {
-        console.error('Failed to fetch transactions, using mock data:', error);
-        setTransactions(initialTransactions);
-      } finally {
-        setIsLoading(false);
-      }
+  // New Transaction Form Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState('PURCHASE');
+  const [ipAddress, setIpAddress] = useState('');
+  const [deviceId, setDeviceId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const data = await fetchTransactions();
+      setTransactions(data.length > 0 ? data : initialTransactions);
+    } catch (err) {
+      console.warn('API error, using initial mock dataset:', err);
+      setTransactions(initialTransactions);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadData();
 
     if (!containerRef.current) return;
@@ -46,131 +85,125 @@ export default function TransactionsPage() {
     return () => ctx.revert();
   }, []);
 
-  // Real-time simulation
-  useEffect(() => {
-    if (!isSimulating) return;
+  const handleCreateTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
-    const interval = setInterval(() => {
-      const newTx = {
-        id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
-        amount: parseFloat((Math.random() * 500).toFixed(2)),
-        status: Math.random() > 0.8 ? 'flagged' : (Math.random() > 0.6 ? 'pending' : 'completed'),
-        date: new Date().toISOString(),
-        merchant: ['Uber', 'Lyft', 'Whole Foods', 'Steam', 'Spotify', 'Target'][Math.floor(Math.random() * 6)],
-        type: Math.random() > 0.9 ? 'credit' : 'debit'
-      };
+    try {
+      const newTx = await createTransaction({
+        amount: parseFloat(amount),
+        type,
+        ipAddress: ipAddress || undefined,
+        deviceId: deviceId || undefined,
+      });
 
-      setTransactions(prev => [newTx, ...prev].slice(0, 15)); // Keep last 15
+      setTransactions((prev) => [newTx, ...prev]);
+      setIsModalOpen(false);
       
-      // Animate new item
+      // Reset form
+      setAmount('');
+      setType('PURCHASE');
+      setIpAddress('');
+      setDeviceId('');
+      
+      // Trigger short highlighting/stagger animation on first row
       setTimeout(() => {
-        if (listRef.current && listRef.current.firstChild) {
-          gsap.fromTo(listRef.current.firstChild as Element, 
-            { height: 0, opacity: 0, backgroundColor: 'rgba(16, 185, 129, 0.2)' },
-            { height: 'auto', opacity: 1, backgroundColor: 'transparent', duration: 0.5, ease: 'power2.out' }
-          );
-        }
-      }, 0);
+        gsap.fromTo(
+          '.tx-row:first-child',
+          { backgroundColor: 'rgba(var(--primary-rgb), 0.2)' },
+          { backgroundColor: 'transparent', duration: 0.8, ease: 'power2.out' }
+        );
+      }, 50);
 
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isSimulating]);
-
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'completed': return 'bg-primary/10 text-primary border-primary/20';
-      case 'pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-      case 'flagged': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'failed': return 'bg-foreground/10 text-foreground/70 border-card-border';
-      default: return 'bg-foreground/10 text-foreground border-card-border';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit transaction');
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const formatCurrency = (amount: number, type: string) => {
-    const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-    return type === 'credit' ? `+${formatted}` : `-${formatted}`;
-  };
-
-  const formatDate = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   return (
     <div ref={containerRef} className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 header-elem">
         <div>
-          <h1 className="text-3xl font-semibold font-bold text-foreground">Real-time Transactions</h1>
-          <p className="text-foreground/60 mt-1">Live feed of all system transactions</p>
+          <h1 className="text-3xl font-semibold font-bold text-foreground">Transactions Feed</h1>
+          <p className="text-foreground/60 mt-1">Live overview and monitoring of platform transactions.</p>
         </div>
         
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => setIsSimulating(!isSimulating)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              isSimulating ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'bg-primary/10 text-primary hover:bg-primary/20'
-            }`}
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground px-4 py-2.5 rounded-lg font-medium transition-all duration-200"
           >
-            <RefreshCw className={`w-4 h-4 ${isSimulating ? 'animate-spin' : ''}`} />
-            {isSimulating ? 'Stop Live Feed' : 'Start Live Feed'}
+            <Plus className="w-4 h-4" />
+            Create Transaction
           </button>
-          <div className="flex items-center gap-2 bg-card border border-card-border rounded-lg px-3 py-2">
-            <Filter className="w-4 h-4 text-foreground/50" />
-            <span className="text-sm font-medium text-foreground">Filter</span>
-          </div>
+          <button 
+            onClick={loadData}
+            className="flex items-center gap-2 bg-card border border-card-border hover:bg-white/5 text-foreground px-3 py-2.5 rounded-lg font-medium transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
         </div>
       </div>
 
       <div className="bg-card border border-card-border rounded-xl overflow-hidden header-elem">
         <div className="grid grid-cols-12 gap-4 p-4 border-b border-card-border bg-background/50 text-xs font-medium text-foreground/50 uppercase tracking-wider">
-          <div className="col-span-3">Transaction ID</div>
-          <div className="col-span-3">Merchant</div>
-          <div className="col-span-2">Time</div>
+          <div className="col-span-3">Transaction ID / Type</div>
+          <div className="col-span-3">Context (IP / Device)</div>
+          <div className="col-span-2">Timestamp</div>
           <div className="col-span-2 text-right">Amount</div>
-          <div className="col-span-2 text-center">Status</div>
+          <div className="col-span-1 text-center">Risk Score</div>
+          <div className="col-span-1 text-center">Status</div>
         </div>
         
-        <div ref={listRef} className="divide-y divide-card-border">
+        <div className="divide-y divide-card-border">
           {isLoading ? (
             <div className="p-8 text-center text-foreground/50">Loading transactions...</div>
           ) : (
             transactions.map((tx) => (
               <div key={tx.id} className="tx-row grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/5 transition-colors group cursor-pointer overflow-hidden">
                 <div className="col-span-3 flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${tx.type === 'credit' ? 'bg-primary/10' : 'bg-background'}`}>
-                    {tx.type === 'credit' ? (
-                      <ArrowDownRight className="w-4 h-4 text-primary" />
-                    ) : (
-                      <ArrowUpRight className="w-4 h-4 text-foreground/70" />
-                    )}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-background border border-card-border">
+                    <ArrowUpRight className="w-4 h-4 text-foreground/70" />
                   </div>
-                  <span className="text-sm font-medium text-foreground font-mono">{tx.id}</span>
+                  <div>
+                    <span className="text-sm font-medium text-foreground font-mono block">{tx.id}</span>
+                    <span className="text-[10px] text-zinc-500 font-bold block">{tx.type}</span>
+                  </div>
                 </div>
                 
-                <div className="col-span-3 flex items-center">
-                  <span className="text-sm text-foreground">{tx.merchant || 'Unknown Merchant'}</span>
+                <div className="col-span-3">
+                  <span className="text-sm text-foreground block font-medium">{tx.ipAddress || 'No IP'}</span>
+                  <span className="text-xs text-foreground/50 truncate block max-w-[180px]">{tx.deviceId || 'No Device ID'}</span>
                 </div>
                 
                 <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-foreground/60">{formatDate(tx.date || tx.createdAt)}</span>
+                  <span className="text-sm text-foreground/60">{formatDate(tx.createdAt)}</span>
                 </div>
                 
                 <div className="col-span-2 flex items-center justify-end">
-                  <span className={`text-sm font-medium font-mono ${tx.type === 'credit' ? 'text-primary' : 'text-foreground'}`}>
-                    {formatCurrency(tx.amount, tx.type)}
+                  <span className="text-sm font-semibold font-mono text-foreground">
+                    {formatAmount(tx.amount)}
                   </span>
                 </div>
-                
-                <div className="col-span-2 flex items-center justify-between">
-                  <div className="flex-1 flex justify-center">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(tx.status.toLowerCase())} capitalize`}>
-                      {tx.status}
+
+                <div className="col-span-1 text-center">
+                  {tx.riskScore !== null ? (
+                    <span className={`text-sm font-bold font-mono ${tx.riskScore >= 0.7 ? 'text-red-500' : tx.riskScore >= 0.4 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {Math.round(tx.riskScore * 100)}%
                     </span>
-                  </div>
-                  <button className="opacity-0 group-hover:opacity-100 p-1 text-foreground/50 hover:text-foreground transition-all">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
+                  ) : (
+                    <span className="text-sm text-foreground/30 font-medium font-mono">—</span>
+                  )}
+                </div>
+                
+                <div className="col-span-1 flex items-center justify-center">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeClass(tx.status)}`}>
+                    {tx.status}
+                  </span>
                 </div>
               </div>
             ))
@@ -180,6 +213,97 @@ export default function TransactionsPage() {
           )}
         </div>
       </div>
+
+      {/* Ingest Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-card border border-card-border rounded-xl shadow-2xl overflow-hidden animate-fade-in">
+            <div className="flex justify-between items-center p-6 border-b border-card-border">
+              <h2 className="text-xl font-bold text-foreground">Ingest Transaction</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-foreground/50 hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {error && (
+              <div className="mx-6 mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg">
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleCreateTransaction} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-amount">
+                  Amount (USD)
+                </label>
+                <input
+                  id="tx-amount"
+                  type="number"
+                  step="0.01"
+                  required
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
+                  placeholder="500.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-type">
+                  Transaction Type
+                </label>
+                <select
+                  id="tx-type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
+                >
+                  <option value="PURCHASE">PURCHASE</option>
+                  <option value="TRANSFER">TRANSFER</option>
+                  <option value="WITHDRAWAL">WITHDRAWAL</option>
+                  <option value="DEPOSIT">DEPOSIT</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-ip">
+                  IP Address (Optional)
+                </label>
+                <input
+                  id="tx-ip"
+                  type="text"
+                  value={ipAddress}
+                  onChange={(e) => setIpAddress(e.target.value)}
+                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
+                  placeholder="192.168.1.1"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-device">
+                  Device ID (Optional)
+                </label>
+                <input
+                  id="tx-device"
+                  type="text"
+                  value={deviceId}
+                  onChange={(e) => setDeviceId(e.target.value)}
+                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
+                  placeholder="device_abc123"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/95 focus:outline-none transition-all disabled:opacity-50 mt-2"
+              >
+                {isSubmitting ? 'Scoring & Ingesting...' : 'Submit Transaction'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

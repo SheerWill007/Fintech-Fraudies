@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WebhookSecretGuard } from './webhook-secret.guard';
 import { CreateTransactionDto } from './transactions.dto';
 
 interface IRequest {
@@ -19,6 +18,12 @@ export class TransactionsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('flagged')
+  getFlagged() {
+    return this.transactionsService.getFlaggedTransactions();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(@Request() req: IRequest) {
     return this.transactionsService.findAll(req.user.id);
@@ -28,12 +33,5 @@ export class TransactionsController {
   @Post()
   create(@Request() req: IRequest, @Body() data: CreateTransactionDto) {
     return this.transactionsService.createTransaction(req.user.id, data);
-  }
-
-  @UseGuards(WebhookSecretGuard)
-  @Post('webhook')
-  handleWebhook(@Body() data: CreateTransactionDto) {
-    // Ingest transactions from external sources
-    return this.transactionsService.createTransaction(data.userId, data);
   }
 }

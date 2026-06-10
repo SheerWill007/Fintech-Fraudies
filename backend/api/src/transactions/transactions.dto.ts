@@ -6,11 +6,7 @@ export class CreateTransactionDto {
   amount: number;
 
   @IsString()
-  @IsOptional()
-  currency?: string;
-
-  @IsString()
-  @IsIn(['PURCHASE', 'TRANSFER', 'WITHDRAWAL', 'DEPOSIT', 'PAYMENT'])
+  @IsIn(['PURCHASE', 'TRANSFER', 'WITHDRAWAL', 'DEPOSIT'])
   type: string;
 
   @IsString()
@@ -20,19 +16,4 @@ export class CreateTransactionDto {
   @IsString()
   @IsOptional()
   deviceId?: string;
-}
-
-export class RiskAssessmentDto {
-  @IsString()
-  transactionId: string;
-
-  @IsNumber()
-  riskScore: number;
-
-  @IsString()
-  @IsIn(['APPROVED', 'PENDING', 'FLAGGED'])
-  status: string;
-
-  @IsOptional()
-  factors?: string[];
 }

@@ -1,7 +1,8 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { CreateTransactionDto } from './transactions.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class TransactionsService {
@@ -11,41 +12,36 @@ export class TransactionsService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private auditService: AuditService,
   ) {
     this.mlEngineUrl = this.configService.get<string>('ML_ENGINE_URL') || 'http://localhost:8000';
   }
 
+  /**
+   * Creates a transaction with synchronous ML scoring.
+   * The README specifies a single synchronous request cycle:
+   * ingest → persist PENDING → score → update status → write audit log → return.
+   */
   async createTransaction(userId: string, data: CreateTransactionDto) {
     // 1. Create the transaction in PENDING state
     const transaction = await this.prisma.transaction.create({
       data: {
         userId,
         amount: data.amount,
-        currency: data.currency || 'USD',
-        type: data.type,
+        type: data.type as any,
         ipAddress: data.ipAddress,
         deviceId: data.deviceId,
         status: 'PENDING',
       },
     });
 
-    // 2. Call ML Engine for risk assessment (asynchronous; uses owner userId, not body)
-    void this.processRiskAssessment(transaction.id, userId, data);
-
-    return transaction;
-  }
-
-  async processRiskAssessment(
-    transactionId: string,
-    userId: string,
-    data: CreateTransactionDto,
-  ) {
+    // 2. Call ML Engine synchronously for risk assessment
     try {
       const response = await fetch(`${this.mlEngineUrl}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transactionId,
+          transactionId: transaction.id,
           userId,
           amount: data.amount,
           type: data.type,
@@ -58,58 +54,48 @@ export class TransactionsService {
         const errorText = await response.text();
         this.logger.error(
           `ML Engine prediction failed: ${response.status} - ${errorText}`,
-          { transactionId },
+          { transactionId: transaction.id },
         );
-        
-        // Mark transaction as pending review when ML engine fails
-        await this.prisma.transaction.update({
-          where: { id: transactionId },
-          data: { status: 'PENDING' },
-        });
-        return;
+
+        // Transaction remains PENDING for manual review when ML engine fails
+        return transaction;
       }
 
       const result = await response.json();
-      
-      // Update transaction with risk score and new status
-      await this.prisma.transaction.update({
-        where: { id: transactionId },
+
+      // 3. Update transaction with risk score, factors, and new status
+      const updatedTransaction = await this.prisma.transaction.update({
+        where: { id: transaction.id },
         data: {
           riskScore: result.riskScore,
+          riskFactors: result.factors || [],
           status: result.status,
         },
       });
 
-      // Log audit trail
-      await this.prisma.auditLog.create({
-        data: {
-          action: 'RISK_ASSESSMENT_COMPLETED',
-          entityType: 'TRANSACTION',
-          entityId: transactionId,
-          details: result,
-        },
+      // 4. Write immutable audit log entry
+      await this.auditService.create({
+        transactionId: transaction.id,
+        statusBefore: 'PENDING',
+        statusAfter: result.status,
+        riskScore: result.riskScore,
+        actorId: userId,
+        reason: `ML risk assessment: ${result.factors?.join(', ') || 'none'}`,
       });
 
       this.logger.log(
-        `Risk assessment completed: ${transactionId} - Score: ${result.riskScore}, Status: ${result.status}`,
+        `Transaction scored: ${transaction.id} | score=${result.riskScore} | status=${result.status}`,
       );
+
+      return updatedTransaction;
     } catch (error) {
       this.logger.error(
         `Unexpected error during risk assessment: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
-        { transactionId },
       );
-      
-      // Mark transaction as pending review on unexpected errors
-      await this.prisma.transaction.update({
-        where: { id: transactionId },
-        data: { status: 'PENDING' },
-      }).catch((updateError) => {
-        this.logger.error(
-          `Failed to update transaction status after ML error: ${updateError.message}`,
-          { transactionId },
-        );
-      });
+
+      // Transaction remains PENDING for manual review on unexpected errors
+      return transaction;
     }
   }
 
@@ -121,25 +107,29 @@ export class TransactionsService {
   }
 
   async getDashboardStats() {
-    const totalVolume = await this.prisma.transaction.aggregate({
-      _sum: { amount: true },
-    });
-    
-    const count = await this.prisma.transaction.count();
-    
-    const flaggedCount = await this.prisma.transaction.count({
-      where: { status: 'FLAGGED' },
-    });
+    const [totalResult, count, flaggedCount, approvedCount, pendingCount] =
+      await Promise.all([
+        this.prisma.transaction.aggregate({ _sum: { amount: true } }),
+        this.prisma.transaction.count(),
+        this.prisma.transaction.count({ where: { status: 'FLAGGED' } }),
+        this.prisma.transaction.count({ where: { status: 'APPROVED' } }),
+        this.prisma.transaction.count({ where: { status: 'PENDING' } }),
+      ]);
 
     return {
-      totalVolume: totalVolume._sum.amount || 0,
+      totalVolume: totalResult._sum.amount || 0,
       transactionCount: count,
       flaggedCount,
+      approvedCount,
+      pendingCount,
+      approvalRate: count > 0 ? Number(((approvedCount / count) * 100).toFixed(1)) : 0,
     };
   }
+
+  async getFlaggedTransactions() {
+    return this.prisma.transaction.findMany({
+      where: { status: 'FLAGGED' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
-
-
-// ============================================================
-// apps/ml-engine
-// ============================================================

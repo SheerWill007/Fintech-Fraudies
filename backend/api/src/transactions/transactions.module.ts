@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { TransactionsController } from './transactions.controller';
-import { WebhookSecretGuard } from './webhook-secret.guard';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  providers: [TransactionsService, WebhookSecretGuard],
+  imports: [AuditModule],
+  providers: [TransactionsService],
   controllers: [TransactionsController],
+  exports: [TransactionsService],
 })
 export class TransactionsModule {}

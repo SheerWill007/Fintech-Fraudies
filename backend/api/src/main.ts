@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
@@ -26,6 +27,9 @@ async function bootstrap(): Promise<void> {
       },
     }),
   );
+
+  // Structured JSON request logging
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // Global prefix for all routes
   app.setGlobalPrefix('api/v1');

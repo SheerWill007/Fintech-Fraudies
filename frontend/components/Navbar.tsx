@@ -8,7 +8,6 @@ const navLinks = [
   { label: "About", href: "#about" },
   { label: "Features", href: "#features" },
   { label: "What you get", href: "#what-you-get" },
-  { label: "Pricing", href: "#pricing" },
 ];
 
 export function Navbar() {
@@ -18,10 +17,10 @@ export function Navbar() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-content items-center justify-between px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-semibold text-black">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
             f
           </span>
-          <span className="text-lg font-semibold tracking-tight">Fora.</span>
+          <span className="text-lg font-semibold tracking-tight">Fraudies</span>
         </Link>
 
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
@@ -37,12 +36,12 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <button type="button" className="hidden text-sm text-zinc-300 transition-colors hover:text-white sm:inline">
+          <Link href="/login" className="hidden text-sm text-zinc-300 transition-colors hover:text-white sm:inline">
             Login
-          </button>
-          <a href="#pricing" className="btn-outline hidden text-xs sm:inline-flex sm:text-sm">
+          </Link>
+          <Link href="/register" className="btn-outline hidden text-xs sm:inline-flex sm:text-sm">
             Get started
-          </a>
+          </Link>
           <button
             type="button"
             aria-label={open ? "Close menu" : "Open menu"}
@@ -69,9 +68,14 @@ export function Navbar() {
               </li>
             ))}
             <li>
-              <a href="#pricing" className="btn-outline mt-2 inline-flex" onClick={() => setOpen(false)}>
+              <Link href="/login" className="block text-sm text-zinc-300 py-1" onClick={() => setOpen(false)}>
+                Login
+              </Link>
+            </li>
+            <li>
+              <Link href="/register" className="btn-outline mt-2 inline-flex" onClick={() => setOpen(false)}>
                 Get started
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>
