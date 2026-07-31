@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import LenisProvider from "@/components/LenisProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -33,7 +34,9 @@ export default function RootLayout({
         <meta name="theme-color" content="#6366f1" />
       </head>
       <body className={`${inter.variable} font-sans bg-background text-foreground antialiased`}>
-        {children}
+        <LenisProvider>
+          {children}
+        </LenisProvider>
       </body>
     </html>
   );
