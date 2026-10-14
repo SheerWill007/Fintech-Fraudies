@@ -5,7 +5,7 @@ const leaders = [
   { rank: 4, name: "Riley Park", role: "Marketing · 28 posts", points: 2410, delta: 42 },
 ];
 
-const rankColors = ["bg-amber-500/20 text-amber-400", "bg-zinc-400/20 text-zinc-300", "bg-orange-700/30 text-orange-300", "bg-zinc-700/30 text-zinc-400"];
+const rankColors = ["bg-yellow-500/20 text-yellow-400", "bg-zinc-400/20 text-zinc-300", "bg-yellow-700/30 text-yellow-300", "bg-zinc-700/30 text-zinc-400"];
 
 export function LeaderboardSection() {
   return (
@@ -76,7 +76,7 @@ export function LeaderboardSection() {
                       </div>
                       <div className="col-span-3 text-right">
                         <p className="font-medium">{row.points.toLocaleString()}</p>
-                        <p className="text-xs text-emerald-500/80">+{row.delta} pts</p>
+                        <p className="text-xs text-accent/80">+{row.delta} pts</p>
                       </div>
                     </div>
                   ))}

@@ -37,7 +37,7 @@ export function AnimatedStat({ value, label, prefix = '', suffix = '' }: Animate
   return (
     <div ref={ref} className="text-center">
       <div
-        className={`mb-1 text-3xl font-bold text-emerald-500 transition-all duration-700 ${
+        className={`mb-1 text-3xl font-bold text-accent transition-all duration-700 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >

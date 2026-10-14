@@ -1,0 +1,22 @@
+# Render Blueprint for the FastAPI backend (Render dashboard -> New -> Blueprint).
+# The frontend is deployed separately on Vercel (root directory: frontend).
+services:
+  - type: web
+    name: fraudies-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    # Generates the 21,000-row dataset and trains/caches the model during the build,
+    # so the server starts instantly instead of training on every cold start.
+    buildCommand: pip install -r requirements.txt && python -m scripts.train
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # Comma-separated list of allowed frontend origins, e.g. https://fraudies.vercel.app
+      - key: FF_CORS_ORIGINS
+        sync: false
+      # Keep the training budget modest on the free instance.
+      - key: FF_TUNING_ITERATIONS
+        value: "8"

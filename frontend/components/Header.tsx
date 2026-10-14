@@ -1,27 +1,87 @@
 'use client';
 
-import { Bell, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { ExternalLink, Search } from 'lucide-react';
+import { DOCS_URL } from '@/lib/api';
+import { navItems } from './Sidebar';
 
 export default function Header() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [q, setQ] = useState('');
+  const [searching, setSearching] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const current = navItems.find((i) => i.href === pathname)?.name ?? 'Overview';
+
+  useEffect(() => {
+    const open = () => {
+      setSearching(true);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    };
+    window.addEventListener('fraudies:search', open);
+    return () => window.removeEventListener('fraudies:search', open);
+  }, []);
+
   return (
-    <header className="h-16 border-b border-card-border bg-background/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
-      <div className="flex-1 max-w-xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
-          <input
-            type="text"
-            placeholder="Search transactions, customers, or alerts..."
-            className="w-full bg-card/50 border border-card-border rounded-full py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-          />
+    <header className="sticky top-0 z-30 border-b border-line bg-background/80 backdrop-blur-md backdrop-saturate-150">
+      <div className="flex h-14 items-center gap-3 px-4 md:px-7">
+        <nav className="flex min-w-0 items-center gap-2 text-[13.5px] font-medium text-muted" aria-label="Breadcrumb">
+          <Link href="/dashboard" className="hover:text-foreground">
+            Dashboard
+          </Link>
+          <span className="text-faint">/</span>
+          <strong className="truncate font-semibold text-foreground">{current}</strong>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          {searching ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (q.trim()) router.push(`/dashboard/transactions?search=${encodeURIComponent(q.trim())}`);
+                setSearching(false);
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onBlur={() => !q && setSearching(false)}
+                onKeyDown={(e) => e.key === 'Escape' && setSearching(false)}
+                placeholder="Transaction, customer, IP or device…"
+                className="field h-[34px] w-56 md:w-72"
+              />
+            </form>
+          ) : (
+            <span className="hidden h-7 items-center gap-[7px] rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-ink-2 sm:inline-flex">
+              <span className="h-[7px] w-[7px] rounded-full bg-good" /> Live
+            </span>
+          )}
+          <button className="icon-btn" aria-label="Search" onClick={() => window.dispatchEvent(new Event('fraudies:search'))}>
+            <Search className="h-4 w-4" />
+          </button>
+          <a href={DOCS_URL} target="_blank" rel="noreferrer" className="icon-btn" aria-label="Open API docs" title="API docs">
+            <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </div>
-      
-      <div className="flex items-center gap-4 ml-4">
-        <button className="relative p-2 text-foreground/70 hover:text-foreground hover:bg-white/5 rounded-full transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
-        </button>
-      </div>
+      {/* Compact navigation below lg, where the sidebar is hidden */}
+      <nav className="flex gap-1 overflow-x-auto px-4 pb-2 lg:hidden">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs ${
+              pathname === item.href ? 'bg-surface-3 text-foreground' : 'text-muted'
+            }`}
+          >
+            {item.name}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }

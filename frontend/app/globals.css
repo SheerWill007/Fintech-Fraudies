@@ -6,11 +6,27 @@
 
 @layer base {
   :root {
-    --background: #000000;
+    color-scheme: dark;
+    --background: #0a0a0a;
     --foreground: #ffffff;
-    --muted: #888888;
-    --card: #111111;
-    --card-border: rgba(255, 255, 255, 0.08);
+    --surface: #0f0f0f;
+    --surface-2: #141414;
+    --surface-3: #1e1e1e;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.1);
+    --text-2: rgba(255, 255, 255, 0.78);
+    --muted: rgba(255, 255, 255, 0.5);
+    --faint: rgba(255, 255, 255, 0.3);
+    --accent: #4ade80;
+    --accent-soft: rgba(74, 222, 128, 0.08);
+    --accent-ring: rgba(74, 222, 128, 0.3);
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* Chart series - blue/yellow validated for colour-vision deficiency on #0f0f0f */
+    --series-legit: #3b82f6;
+    --series-fraud: #eab308;
+    --chart-grid: rgba(255, 255, 255, 0.06);
+    --chart-axis: rgba(255, 255, 255, 0.45);
   }
 
   html {
@@ -41,7 +57,9 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -53,8 +71,18 @@
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+  ::selection {
+    background: var(--accent-ring);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #2a2a2a;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -152,5 +180,106 @@
 
   .gradient-glow:hover::before {
     opacity: 1;
+  }
+}
+
+/* ============================================================
+   Dashboard design system (dark, green accent, Space Grotesk)
+   ============================================================ */
+@layer components {
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.1em] text-accent;
+  }
+  .page-title {
+    @apply text-[30px] font-bold leading-[1.12] tracking-[-0.03em] text-foreground;
+  }
+  .lede {
+    @apply text-[15px] leading-relaxed text-muted;
+  }
+  .panel {
+    @apply min-w-0 rounded-2xl border border-line bg-surface px-[22px] pb-[22px] pt-5;
+  }
+  .panel-title {
+    @apply text-[15px] font-semibold tracking-[-0.01em] text-foreground;
+  }
+  .panel-sub {
+    @apply mt-[3px] text-[13px] text-muted;
+  }
+
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-transparent bg-accent px-4 text-[13.5px] font-semibold text-black transition-colors duration-150 hover:bg-accent-hover active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .btn-secondary {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-line-strong bg-surface px-4 text-[13.5px] font-medium text-foreground transition-colors duration-150 hover:border-faint hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .btn-sm {
+    @apply h-8 rounded-lg px-3 text-[13px];
+  }
+  .icon-btn {
+    @apply inline-grid h-[34px] w-[34px] flex-none place-items-center rounded-[9px] border border-line bg-surface text-muted transition-colors hover:border-line-strong hover:text-foreground;
+  }
+
+  .segmented {
+    @apply inline-flex gap-0.5 rounded-[10px] border border-line bg-surface-2 p-[3px];
+  }
+  .segmented > button {
+    @apply h-7 rounded-[7px] px-3 text-[13px] font-medium text-muted transition-colors hover:text-foreground;
+  }
+  .segmented > button[aria-pressed='true'] {
+    @apply bg-surface-3 text-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)];
+  }
+
+  .field {
+    @apply h-9 w-full rounded-[10px] border border-line-strong bg-surface px-3 text-[13.5px] text-foreground placeholder:text-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/30;
+  }
+
+  /* "Label  Value ⌄" filter pill wrapping a native <select> */
+  .pill-select {
+    @apply relative inline-flex h-9 items-center gap-2 rounded-[9px] border border-line bg-surface-2 pl-3 pr-8 transition-colors hover:border-line-strong;
+  }
+  .pill-select.is-set {
+    @apply border-accent/30 bg-accent/[0.08];
+  }
+  .pill-select > span {
+    @apply whitespace-nowrap text-[12.5px] font-medium text-muted;
+  }
+  .pill-select > select {
+    @apply cursor-pointer appearance-none bg-transparent text-[13px] font-semibold text-foreground focus:outline-none;
+  }
+  .pill-select.is-set > select {
+    @apply text-accent;
+  }
+  .pill-select > select option {
+    @apply bg-surface text-foreground;
+  }
+  .pill-select > svg {
+    @apply pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-muted;
+  }
+
+  .tag {
+    @apply inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-[10.5px] font-bold uppercase tracking-[0.04em];
+  }
+
+  .delta {
+    @apply inline-flex h-5 items-center gap-0.5 rounded-md px-1.5 text-[11.5px] font-bold tabular-nums;
+  }
+
+  .data-table {
+    @apply w-full border-collapse text-[13.5px];
+  }
+  .data-table th {
+    @apply whitespace-nowrap border-b border-line px-3 py-[11px] text-left text-[11.5px] font-semibold uppercase tracking-[0.06em] text-faint;
+  }
+  .data-table td {
+    @apply whitespace-nowrap border-b border-line px-3 py-[11px] text-ink-2;
+  }
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-white/[0.04] text-foreground;
+  }
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
   }
 }

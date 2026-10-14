@@ -34,7 +34,7 @@ export function WhatYouGetSection() {
 
             <div className="relative min-h-[280px] bg-gradient-to-br from-zinc-800/80 to-zinc-950 p-8">
               <div className="mx-auto max-w-xs rounded-xl border border-white/10 bg-black/40 p-6 backdrop-blur-sm">
-                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-orange-400 via-rose-500 to-violet-600" />
+                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-yellow-400 via-rose-500 to-violet-600" />
                 <h4 className="text-center text-lg font-semibold">DesignLab</h4>
                 <p className="mt-1 text-center text-xs text-muted">designlab.com</p>
                 <div className="mt-4 flex items-center justify-center gap-2">

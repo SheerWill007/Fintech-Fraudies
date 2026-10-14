@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import LenisProvider from "@/components/LenisProvider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const sans = Space_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Fraudies — Real-time Fraud Detection Platform",
-  description: "Enterprise fraud monitoring orchestrator and risk assessment engine.",
+  title: { default: "Fraudies — Real-time Fraud Detection", template: "%s · Fraudies" },
+  description: "Fraud analytics, ML risk scoring and alert review, built on 21,000 labelled transactions.",
   icons: {
     icon: [
       { url: '/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
-    apple: [
-      { url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-    other: [
-      { rel: 'manifest', url: '/favicon/site.webmanifest' },
-    ],
+    apple: [{ url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    other: [{ rel: 'manifest', url: '/favicon/site.webmanifest' }],
   },
   manifest: '/favicon/site.webmanifest',
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -29,14 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <meta name="theme-color" content="#6366f1" />
-      </head>
-      <body className={`${inter.variable} font-sans bg-background text-foreground antialiased`}>
-        <LenisProvider>
-          {children}
-        </LenisProvider>
+    <html lang="en" className={`dark ${sans.variable} ${mono.variable}`}>
+      <body className="bg-background font-sans text-foreground antialiased">
+        <LenisProvider>{children}</LenisProvider>
       </body>
     </html>
   );

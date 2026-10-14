@@ -1,309 +1,394 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
-import { Search, Filter, ArrowUpRight, Plus, RefreshCw, X } from 'lucide-react';
-import { fetchTransactions, createTransaction, Transaction } from '@/lib/api-client';
-import { formatAmount, formatDate, getStatusBadgeClass } from '@/lib/formatters';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ArrowDown, ArrowUp, Plus, Search, X } from 'lucide-react';
+import { api, type Contribution, type Transaction } from '@/lib/api';
+import { formatAmount, formatDate, formatPct, humanize, riskTextClass } from '@/lib/formatters';
+import TransactionDrawer from '@/components/dashboard/TransactionDrawer';
+import {
+  ErrorBanner,
+  LabelBadge,
+  PageHeader,
+  Pagination,
+  PillSelect,
+  Spinner,
+  StatusBadge,
+  inputClass,
+  primaryButtonClass,
+  useApi,
+} from '@/components/dashboard/ui';
 
-const initialTransactions: Transaction[] = [
-  { 
-    id: 'TX-9821', 
-    userId: 'user1',
-    amount: 9500.00, 
-    type: 'TRANSFER', 
-    status: 'FLAGGED', 
-    riskScore: 0.85, 
-    riskFactors: ['Large transaction amount ($9,500.00)', 'High-risk transaction type (TRANSFER)'], 
-    ipAddress: '185.220.101.5', 
-    deviceId: 'new_device_001', 
-    createdAt: new Date(Date.now() - 300000).toISOString(),
-    updatedAt: new Date(Date.now() - 300000).toISOString(),
-  },
-  { 
-    id: 'TX-9822', 
-    userId: 'user1',
-    amount: 120.00, 
-    type: 'PURCHASE', 
-    status: 'APPROVED', 
-    riskScore: 0.10, 
-    riskFactors: [], 
-    ipAddress: '192.168.1.5', 
-    deviceId: 'device_998', 
-    createdAt: new Date(Date.now() - 600000).toISOString(),
-    updatedAt: new Date(Date.now() - 600000).toISOString(),
-  },
-  { 
-    id: 'TX-9823', 
-    userId: 'user1',
-    amount: 450.00, 
-    type: 'WITHDRAWAL', 
-    status: 'PENDING', 
-    riskScore: 0.45, 
-    riskFactors: ['High-risk transaction type (WITHDRAWAL)'], 
-    ipAddress: '24.108.92.11', 
-    deviceId: 'device_342', 
-    createdAt: new Date(Date.now() - 900000).toISOString(),
-    updatedAt: new Date(Date.now() - 900000).toISOString(),
-  },
-];
+type Sort = 'timestamp' | 'amount' | 'risk_score';
 
-export default function TransactionsPage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // New Transaction Form Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [amount, setAmount] = useState('');
-  const [type, setType] = useState('PURCHASE');
-  const [ipAddress, setIpAddress] = useState('');
-  const [deviceId, setDeviceId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const loadData = async () => {
-    try {
-      const data = await fetchTransactions();
-      setTransactions(data.length > 0 ? data : initialTransactions);
-    } catch (err) {
-      console.warn('API error, using initial mock dataset:', err);
-      setTransactions(initialTransactions);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+function TransactionsView() {
+  const params = useSearchParams();
+  const [search, setSearch] = useState(params.get('search') ?? '');
+  const [query, setQuery] = useState(params.get('search') ?? '');
+  const [status, setStatus] = useState('');
+  const [label, setLabel] = useState('');
+  const [type, setType] = useState('');
+  const [category, setCategory] = useState('');
+  const [minRisk, setMinRisk] = useState(0);
+  const [sort, setSort] = useState<Sort>('timestamp');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    loadData();
+    const s = params.get('search') ?? '';
+    setSearch(s);
+    setQuery(s);
+    setPage(1);
+  }, [params]);
 
-    if (!containerRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.from('.header-elem', { y: -20, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' });
-      gsap.from('.tx-row', { x: -20, opacity: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out', delay: 0.2 });
-    }, containerRef);
-    return () => ctx.revert();
-  }, []);
+  const options = useApi(() => api.filters(), []);
+  const model = useApi(() => api.model(), []);
+  const list = useApi(
+    () =>
+      api.transactions({
+        search: query || undefined,
+        status: status ? [status] : undefined,
+        label: label || undefined,
+        type: type ? [type] : undefined,
+        category: category ? [category] : undefined,
+        min_risk: minRisk || undefined,
+        sort,
+        order,
+        page,
+        page_size: 25,
+      }),
+    [query, status, label, type, category, minRisk, sort, order, page],
+  );
 
-  const handleCreateTransaction = async (e: React.FormEvent) => {
+  const setFilter = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setPage(1);
+  };
+  const toggleSort = (col: Sort) => {
+    if (sort === col) setOrder(order === 'asc' ? 'desc' : 'asc');
+    else {
+      setSort(col);
+      setOrder('desc');
+    }
+    setPage(1);
+  };
+  const SortIcon = ({ col }: { col: Sort }) =>
+    sort === col ? order === 'desc' ? <ArrowDown className="h-3 w-3 text-accent" /> : <ArrowUp className="h-3 w-3 text-accent" /> : null;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Monitoring"
+        title="Transactions"
+        subtitle="Every transaction with its out-of-fold model score. Click a row for the explanation."
+        actions={
+          <button className={primaryButtonClass} onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4" /> Score new transaction
+          </button>
+        }
+      />
+
+      <div className="relative z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-2">
+        <form
+          className="flex h-9 min-w-[240px] flex-1 items-center gap-2 rounded-[9px] border border-line bg-surface-2 px-3 text-muted focus-within:border-accent focus-within:ring-[3px] focus-within:ring-accent/30"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setQuery(search.trim());
+            setPage(1);
+          }}
+        >
+          <Search className="h-4 w-4 flex-none" />
+          <input
+            className="w-full bg-transparent text-[13.5px] text-foreground placeholder:text-faint focus:outline-none"
+            placeholder="ID, customer, IP or device — press Enter"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
+        <PillSelect
+          label="Status"
+          value={status}
+          onChange={setFilter(setStatus)}
+          options={['APPROVED', 'PENDING', 'FLAGGED', 'BLOCKED'].map((v) => ({ value: v, label: humanize(v.toLowerCase()) }))}
+        />
+        <PillSelect
+          label="Label"
+          value={label}
+          onChange={setFilter(setLabel)}
+          options={[
+            { value: 'fraud', label: 'Fraud' },
+            { value: 'legit', label: 'Legit' },
+            { value: 'unknown', label: 'Unlabelled' },
+          ]}
+        />
+        <PillSelect
+          label="Type"
+          value={type}
+          onChange={setFilter(setType)}
+          options={(options.data?.types ?? []).map((t) => ({ value: t, label: humanize(t.toLowerCase()) }))}
+        />
+        <PillSelect
+          label="Category"
+          value={category}
+          onChange={setFilter(setCategory)}
+          options={(options.data?.categories ?? []).map((c) => ({ value: c, label: humanize(c) }))}
+        />
+        <PillSelect
+          label="Risk"
+          allLabel="Any"
+          value={minRisk ? String(minRisk) : ''}
+          onChange={(v) => setFilter(setMinRisk)(Number(v) || 0)}
+          options={[
+            { value: '0.1', label: '≥ 10%' },
+            { value: '0.5', label: '≥ 50%' },
+            { value: '0.9', label: '≥ 90%' },
+          ]}
+        />
+      </div>
+
+      {list.error && <ErrorBanner message={list.error} onRetry={list.reload} />}
+
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+        <div className="overflow-x-auto px-[22px] pt-2">
+          <table className="data-table min-w-[900px]">
+            <thead>
+              <tr>
+                <th className="!pl-0">Transaction</th>
+                <th>Customer</th>
+                <th>
+                  <button className="flex items-center gap-1 uppercase tracking-[0.06em] hover:text-foreground" onClick={() => toggleSort('timestamp')}>
+                    Time (UTC) <SortIcon col="timestamp" />
+                  </button>
+                </th>
+                <th>Category · channel</th>
+                <th className="text-right">
+                  <button className="ml-auto flex items-center gap-1 uppercase tracking-[0.06em] hover:text-foreground" onClick={() => toggleSort('amount')}>
+                    <SortIcon col="amount" /> Amount
+                  </button>
+                </th>
+                <th className="text-right">
+                  <button className="ml-auto flex items-center gap-1 uppercase tracking-[0.06em] hover:text-foreground" onClick={() => toggleSort('risk_score')}>
+                    <SortIcon col="risk_score" /> Risk
+                  </button>
+                </th>
+                <th>Status</th>
+                <th className="!pr-0">Label</th>
+              </tr>
+            </thead>
+            <tbody className={`transition-opacity ${list.loading ? 'opacity-50' : ''}`}>
+              {list.data?.rows.map((tx) => (
+                <tr key={tx.transaction_id} onClick={() => setSelected(tx.transaction_id)} className="cursor-pointer">
+                  <td className="!pl-0">
+                    <span className="block font-mono text-[12.5px] text-foreground">{tx.transaction_id}</span>
+                    <span className="text-[11px] text-faint">
+                      {tx.type}
+                      {tx.source === 'live' ? ' · live' : ''}
+                    </span>
+                  </td>
+                  <td className="font-mono text-[12.5px]">{tx.customer_id}</td>
+                  <td className="text-muted">{formatDate(tx.timestamp)}</td>
+                  <td>
+                    {humanize(tx.merchant_category)} · {tx.channel}
+                    {tx.country !== tx.home_country && <span className="ml-1 text-faint">({tx.country})</span>}
+                  </td>
+                  <td className="text-right font-semibold tabular-nums text-foreground">{formatAmount(tx.amount)}</td>
+                  <td className={`text-right font-semibold tabular-nums ${riskTextClass(tx.risk_score, model.data?.thresholds)}`}>
+                    {formatPct(tx.risk_score)}
+                  </td>
+                  <td>
+                    <StatusBadge status={tx.status} />
+                  </td>
+                  <td className="!pr-0">
+                    <LabelBadge isFraud={tx.is_fraud} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!list.data && list.loading && <Spinner />}
+        {list.data && list.data.total === 0 && (
+          <p className="p-8 text-center text-sm text-muted">No transactions match these filters.</p>
+        )}
+        {list.data && <Pagination page={list.data.page} pages={list.data.pages} total={list.data.total} onPage={setPage} />}
+      </div>
+
+      {selected && (
+        <TransactionDrawer
+          id={selected}
+          thresholds={model.data?.thresholds}
+          onClose={() => setSelected(null)}
+          onReviewed={() => list.reload()}
+        />
+      )}
+      {showCreate && (
+        <CreateTransactionModal
+          categories={options.data?.categories ?? []}
+          onClose={() => setShowCreate(false)}
+          onCreated={(tx) => {
+            list.reload();
+            setShowCreate(false);
+            setSelected(tx.transaction_id);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function CreateTransactionModal({
+  categories,
+  onClose,
+  onCreated,
+}: {
+  categories: string[];
+  onClose: () => void;
+  onCreated: (tx: Transaction, contributions: Contribution[]) => void;
+}) {
+  const [form, setForm] = useState({
+    customer_id: 'CUST-00042',
+    amount: '249.99',
+    type: 'PURCHASE',
+    merchant_category: 'electronics',
+    channel: 'WEB',
+    country: 'US',
+    ip_address: '',
+    device_id: '',
+    is_vpn: false,
+    ip_risk_score: '',
+    failed_logins_24h: '0',
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm({ ...form, [k]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value });
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setBusy(true);
     setError(null);
-    setIsSubmitting(true);
-
     try {
-      const newTx = await createTransaction({
-        amount: parseFloat(amount),
-        type,
-        ipAddress: ipAddress || undefined,
-        deviceId: deviceId || undefined,
+      const res = await api.createTransaction({
+        customer_id: form.customer_id,
+        amount: Number(form.amount),
+        type: form.type,
+        merchant_category: form.merchant_category,
+        channel: form.channel,
+        country: form.country,
+        ip_address: form.ip_address || undefined,
+        device_id: form.device_id || undefined,
+        is_vpn: form.is_vpn,
+        ip_risk_score: form.ip_risk_score === '' ? undefined : Number(form.ip_risk_score),
+        failed_logins_24h: Number(form.failed_logins_24h) || 0,
       });
-
-      setTransactions((prev) => [newTx, ...prev]);
-      setIsModalOpen(false);
-      
-      // Reset form
-      setAmount('');
-      setType('PURCHASE');
-      setIpAddress('');
-      setDeviceId('');
-      
-      // Trigger short highlighting/stagger animation on first row
-      setTimeout(() => {
-        gsap.fromTo(
-          '.tx-row:first-child',
-          { backgroundColor: 'rgba(var(--primary-rgb), 0.2)' },
-          { backgroundColor: 'transparent', duration: 0.8, ease: 'power2.out' }
-        );
-      }, 50);
-
+      onCreated(res.transaction, res.contributions);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit transaction');
+      setError(err instanceof Error ? err.message : 'Failed to score transaction');
     } finally {
-      setIsSubmitting(false);
+      setBusy(false);
     }
   };
 
+  const label = 'mb-1 block text-xs font-medium text-ink-2';
   return (
-    <div ref={containerRef} className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 header-elem">
-        <div>
-          <h1 className="text-3xl font-semibold font-bold text-foreground">Transactions Feed</h1>
-          <p className="text-foreground/60 mt-1">Live overview and monitoring of platform transactions.</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/95 text-primary-foreground px-4 py-2.5 rounded-lg font-medium transition-all duration-200"
-          >
-            <Plus className="w-4 h-4" />
-            Create Transaction
-          </button>
-          <button 
-            onClick={loadData}
-            className="flex items-center gap-2 bg-card border border-card-border hover:bg-white/5 text-foreground px-3 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-card border border-card-border rounded-xl overflow-hidden header-elem">
-        <div className="grid grid-cols-12 gap-4 p-4 border-b border-card-border bg-background/50 text-xs font-medium text-foreground/50 uppercase tracking-wider">
-          <div className="col-span-3">Transaction ID / Type</div>
-          <div className="col-span-3">Context (IP / Device)</div>
-          <div className="col-span-2">Timestamp</div>
-          <div className="col-span-2 text-right">Amount</div>
-          <div className="col-span-1 text-center">Risk Score</div>
-          <div className="col-span-1 text-center">Status</div>
-        </div>
-        
-        <div className="divide-y divide-card-border">
-          {isLoading ? (
-            <div className="p-8 text-center text-foreground/50">Loading transactions...</div>
-          ) : (
-            transactions.map((tx) => (
-              <div key={tx.id} className="tx-row grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/5 transition-colors group cursor-pointer overflow-hidden">
-                <div className="col-span-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-background border border-card-border">
-                    <ArrowUpRight className="w-4 h-4 text-foreground/70" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-foreground font-mono block">{tx.id}</span>
-                    <span className="text-[10px] text-zinc-500 font-bold block">{tx.type}</span>
-                  </div>
-                </div>
-                
-                <div className="col-span-3">
-                  <span className="text-sm text-foreground block font-medium">{tx.ipAddress || 'No IP'}</span>
-                  <span className="text-xs text-foreground/50 truncate block max-w-[180px]">{tx.deviceId || 'No Device ID'}</span>
-                </div>
-                
-                <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-foreground/60">{formatDate(tx.createdAt)}</span>
-                </div>
-                
-                <div className="col-span-2 flex items-center justify-end">
-                  <span className="text-sm font-semibold font-mono text-foreground">
-                    {formatAmount(tx.amount)}
-                  </span>
-                </div>
-
-                <div className="col-span-1 text-center">
-                  {tx.riskScore !== null ? (
-                    <span className={`text-sm font-bold font-mono ${tx.riskScore >= 0.7 ? 'text-red-500' : tx.riskScore >= 0.4 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                      {Math.round(tx.riskScore * 100)}%
-                    </span>
-                  ) : (
-                    <span className="text-sm text-foreground/30 font-medium font-mono">—</span>
-                  )}
-                </div>
-                
-                <div className="col-span-1 flex items-center justify-center">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeClass(tx.status)}`}>
-                    {tx.status}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-          {!isLoading && transactions.length === 0 && (
-             <div className="p-8 text-center text-foreground/50">No transactions found.</div>
-          )}
-        </div>
-      </div>
-
-      {/* Ingest Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-card border border-card-border rounded-xl shadow-2xl overflow-hidden animate-fade-in">
-            <div className="flex justify-between items-center p-6 border-b border-card-border">
-              <h2 className="text-xl font-bold text-foreground">Ingest Transaction</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-foreground/50 hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {error && (
-              <div className="mx-6 mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleCreateTransaction} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-amount">
-                  Amount (USD)
-                </label>
-                <input
-                  id="tx-amount"
-                  type="number"
-                  step="0.01"
-                  required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
-                  placeholder="500.00"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-type">
-                  Transaction Type
-                </label>
-                <select
-                  id="tx-type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
-                >
-                  <option value="PURCHASE">PURCHASE</option>
-                  <option value="TRANSFER">TRANSFER</option>
-                  <option value="WITHDRAWAL">WITHDRAWAL</option>
-                  <option value="DEPOSIT">DEPOSIT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-ip">
-                  IP Address (Optional)
-                </label>
-                <input
-                  id="tx-ip"
-                  type="text"
-                  value={ipAddress}
-                  onChange={(e) => setIpAddress(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
-                  placeholder="192.168.1.1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground/85 mb-1.5" htmlFor="tx-device">
-                  Device ID (Optional)
-                </label>
-                <input
-                  id="tx-device"
-                  type="text"
-                  value={deviceId}
-                  onChange={(e) => setDeviceId(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground focus:outline-none focus:border-primary transition-colors"
-                  placeholder="device_abc123"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/95 focus:outline-none transition-all disabled:opacity-50 mt-2"
-              >
-                {isSubmitting ? 'Scoring & Ingesting...' : 'Submit Transaction'}
-              </button>
-            </form>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <form
+        data-lenis-prevent
+        onSubmit={submit}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-line bg-surface"
+      >
+        <div className="flex items-center justify-between border-b border-line p-5">
+          <div>
+            <h2 className="text-lg font-semibold">Score a new transaction</h2>
+            <p className="text-xs text-muted">
+              Velocity, spend ratio, account and device age are derived from the customer’s history.
+            </p>
           </div>
+          <button type="button" onClick={onClose} className="text-muted hover:text-foreground" aria-label="Close">
+            <X className="h-5 w-5" />
+          </button>
         </div>
-      )}
+        <div className="grid grid-cols-2 gap-4 p-5">
+          <div>
+            <label className={label}>Customer ID</label>
+            <input required className={inputClass} value={form.customer_id} onChange={set('customer_id')} />
+          </div>
+          <div>
+            <label className={label}>Amount (USD)</label>
+            <input required type="number" min="0.01" step="0.01" className={inputClass} value={form.amount} onChange={set('amount')} />
+          </div>
+          <div>
+            <label className={label}>Type</label>
+            <select className={inputClass} value={form.type} onChange={set('type')}>
+              {['PURCHASE', 'TRANSFER', 'WITHDRAWAL', 'DEPOSIT'].map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={label}>Merchant category</label>
+            <select className={inputClass} value={form.merchant_category} onChange={set('merchant_category')}>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {humanize(c)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={label}>Channel</label>
+            <select className={inputClass} value={form.channel} onChange={set('channel')}>
+              {['POS', 'WEB', 'MOBILE', 'ATM'].map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={label}>Country (ISO-2)</label>
+            <input required maxLength={2} className={inputClass} value={form.country} onChange={set('country')} />
+          </div>
+          <div>
+            <label className={label}>IP address</label>
+            <input className={inputClass} placeholder="optional" value={form.ip_address} onChange={set('ip_address')} />
+          </div>
+          <div>
+            <label className={label}>Device ID</label>
+            <input className={inputClass} placeholder="blank = unknown device" value={form.device_id} onChange={set('device_id')} />
+          </div>
+          <div>
+            <label className={label}>IP risk score (0–1)</label>
+            <input type="number" min="0" max="1" step="0.01" className={inputClass} placeholder="auto" value={form.ip_risk_score} onChange={set('ip_risk_score')} />
+          </div>
+          <div>
+            <label className={label}>Failed logins (24h)</label>
+            <input type="number" min="0" className={inputClass} value={form.failed_logins_24h} onChange={set('failed_logins_24h')} />
+          </div>
+          <label className="col-span-2 flex items-center gap-2 text-sm text-ink-2">
+            <input type="checkbox" checked={form.is_vpn} onChange={set('is_vpn')} /> Connection via VPN / proxy
+          </label>
+        </div>
+        {error && (
+          <div className="px-5">
+            <ErrorBanner message={error} />
+          </div>
+        )}
+        <div className="p-5 pt-3">
+          <button type="submit" disabled={busy} className={`${primaryButtonClass} w-full justify-center py-2.5`}>
+            {busy ? 'Scoring…' : 'Score & ingest'}
+          </button>
+        </div>
+      </form>
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <TransactionsView />
+    </Suspense>
   );
 }

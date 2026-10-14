@@ -20,3 +20,11 @@ __pycache__
 # IDE
 .idea
 .vscode
+
+# Generated at runtime / build time by the backend
+backend/data/*.csv
+backend/data/uploads/
+backend/data/runtime/
+backend/models/
+backend/.pytest_cache/
+frontend/out/

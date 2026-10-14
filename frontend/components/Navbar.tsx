@@ -36,11 +36,8 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/login" className="hidden text-sm text-zinc-300 transition-colors hover:text-white sm:inline">
-            Login
-          </Link>
-          <Link href="/register" className="btn-outline hidden text-xs sm:inline-flex sm:text-sm">
-            Get started
+          <Link href="/dashboard" className="btn-outline hidden text-xs sm:inline-flex sm:text-sm">
+            Open dashboard
           </Link>
           <button
             type="button"
@@ -68,13 +65,8 @@ export function Navbar() {
               </li>
             ))}
             <li>
-              <Link href="/login" className="block text-sm text-zinc-300 py-1" onClick={() => setOpen(false)}>
-                Login
-              </Link>
-            </li>
-            <li>
-              <Link href="/register" className="btn-outline mt-2 inline-flex" onClick={() => setOpen(false)}>
-                Get started
+              <Link href="/dashboard" className="btn-outline mt-2 inline-flex" onClick={() => setOpen(false)}>
+                Open dashboard
               </Link>
             </li>
           </ul>

@@ -3,28 +3,32 @@
 import Link from "next/link";
 import { Shield, Activity, Brain, Clock, DollarSign, Users, CheckCircle2, ArrowRight, TrendingDown, Lock, AlertCircle } from "lucide-react";
 import { AnimatedStat } from "@/components/landing/AnimatedStat";
+import { DOCS_URL } from "@/lib/api";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-background text-white">
       {/* Header */}
-      <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <Shield className="h-5 w-5 text-emerald-500" />
-            </div>
-            <span className="text-xl font-bold text-white">Fraudies</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+      <header className="fixed top-0 z-50 w-full bg-background/90 backdrop-blur-xl">
+        <nav className="mx-auto flex h-[88px] max-w-7xl items-center justify-between border-b border-line px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-[10px] border border-line bg-surface-3">
+              <Shield className="h-5 w-5 text-white" />
+            </span>
+            <span className="text-[19px] font-bold tracking-[-0.02em] text-white">Fraudies</span>
+          </Link>
+          <div className="flex items-center gap-8 text-base font-medium">
+            <Link href="/dashboard" className="hidden text-ink-2 transition-colors hover:text-white sm:inline">
               Dashboard
             </Link>
-            <Link href="/login" className="text-sm font-medium text-white/60 transition-colors hover:text-white">
-              Login
+            <Link href="/dashboard/simulator" className="hidden text-ink-2 transition-colors hover:text-white sm:inline">
+              Simulator
             </Link>
-            <Link href="/register" className="rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-400">
-              Start Free Trial
+            <a href={DOCS_URL} target="_blank" rel="noreferrer" className="hidden text-ink-2 transition-colors hover:text-white md:inline">
+              API
+            </a>
+            <Link href="/dashboard" className="btn h-11 rounded-[10px] px-6 text-base">
+              Open dashboard
             </Link>
           </div>
         </nav>
@@ -32,19 +36,21 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 pt-32 pb-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(16,185,129,0.1)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(74,222,128,0.08)_0%,_transparent_50%)]" />
         <div className="absolute inset-0 grid-bg opacity-40" />
         <div className="relative mx-auto max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left: Copy */}
             <div>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400 uppercase tracking-wider">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-1.5 text-xs font-medium text-accent-hover uppercase tracking-wider">
                 PAYMENT FRAUD DETECTION
               </div>
               <h1 className="mb-6 text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
                 Catch payment fraud
                 <br />
-                <span className="text-white/40">before</span> the chargeback
+                <span className="-ml-4 mt-2 inline-block rounded-[10px] bg-accent/[0.08] px-4 pb-2 pt-0.5 text-accent shadow-[inset_0_0_0_1px_rgba(74,222,128,0.04)]">
+                  before the chargeback
+                </span>
               </h1>
               <p className="mb-8 text-lg text-white/60 leading-relaxed max-w-xl">
                 Stop losing 2-5% of revenue to friendly fraud, account takeovers, and synthetic identities. 
@@ -54,32 +60,32 @@ export default function Home() {
               {/* Value props */}
               <div className="mb-10 space-y-3">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-accent flex-shrink-0" />
                   <span className="text-white/80">Reduce chargebacks by 73% on average</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-accent flex-shrink-0" />
                   <span className="text-white/80">Deploy in 4 hours with REST API</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-accent flex-shrink-0" />
                   <span className="text-white/80">No upfront ML training required</span>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
-                  href="/register" 
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-semibold text-black transition-all hover:bg-emerald-400"
+                  href="/dashboard" 
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3.5 text-base font-semibold text-black transition-all hover:bg-accent-hover"
                 >
-                  Start 14-day free trial
+                  Open the dashboard
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link 
-                  href="/dashboard" 
+                  href="/dashboard/simulator" 
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-3.5 text-base font-semibold text-white backdrop-blur transition-all hover:bg-white/10"
                 >
-                  View live demo
+                  Try the simulator
                 </Link>
               </div>
               
@@ -91,16 +97,16 @@ export default function Home() {
             {/* Right: Product Preview */}
             <div className="relative">
               {/* Glow effect */}
-              <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full opacity-20" />
+              <div className="absolute -inset-4 bg-accent/20 blur-3xl rounded-full opacity-20" />
               
               <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900 to-black p-6 shadow-2xl">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-emerald-500" />
+                    <Activity className="h-4 w-4 text-accent" />
                     <span className="text-sm font-medium text-white/80">Live Transaction Feed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                     <span className="text-xs text-white/40">Real-time</span>
                   </div>
                 </div>
@@ -123,8 +129,8 @@ export default function Home() {
                         <span className="font-semibold text-white">{txn.amount}</span>
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           txn.status === 'FLAGGED' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                          txn.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          txn.status === 'APPROVED' ? 'bg-accent/10 text-accent-hover border border-accent/20' :
+                          'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                         }`}>
                           {txn.status}
                         </span>
@@ -144,7 +150,7 @@ export default function Home() {
                 {/* Mini stats at bottom */}
                 <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-lg font-bold text-emerald-500">156</div>
+                    <div className="text-lg font-bold text-accent">156</div>
                     <div className="text-xs text-white/40">Flagged today</div>
                   </div>
                   <div>
@@ -195,7 +201,7 @@ export default function Home() {
       {/* Problem Section */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl text-center">
-          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-emerald-500">THE COST OF DOING NOTHING</p>
+          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">THE COST OF DOING NOTHING</p>
           <h2 className="mb-16 text-4xl md:text-5xl font-bold leading-tight">
             Payment fraud is bleeding your business dry
           </h2>
@@ -223,7 +229,7 @@ export default function Home() {
       {/* How It Works */}
       <section className="bg-white/[0.02] px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-emerald-500">HOW IT WORKS</p>
+          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-accent">HOW IT WORKS</p>
           <h2 className="mb-4 text-center text-4xl md:text-5xl font-bold">
             Detection in three layers
           </h2>
@@ -256,12 +262,12 @@ export default function Home() {
               }
             ].map((item, i) => (
               <div key={i} className="flex flex-col md:flex-row gap-6 items-start rounded-xl border border-white/10 bg-black/40 p-8">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                  <item.icon className="h-6 w-6 text-emerald-500" />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10">
+                  <item.icon className="h-6 w-6 text-accent" />
                 </div>
                 <div className="flex-1">
                   <div className="mb-2 flex items-center gap-3">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-400">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/20 text-xs font-bold text-accent-hover">
                       {item.step}
                     </span>
                     <h3 className="text-xl font-semibold text-white">{item.title}</h3>
@@ -277,7 +283,7 @@ export default function Home() {
       {/* Specific Use Cases */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-emerald-500">FRAUD TYPES WE CATCH</p>
+          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-accent">FRAUD TYPES WE CATCH</p>
           <h2 className="mb-16 text-center text-4xl md:text-5xl font-bold">
             Built for payment platforms & neobanks
           </h2>
@@ -310,15 +316,15 @@ export default function Home() {
               }
             ].map((useCase, i) => (
               <div key={i} className="rounded-xl border border-white/10 bg-gradient-to-br from-zinc-900 to-black p-6">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10">
-                  <useCase.icon className="h-5 w-5 text-emerald-500" />
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+                  <useCase.icon className="h-5 w-5 text-accent" />
                 </div>
                 <h3 className="mb-2 text-xl font-semibold text-white">{useCase.title}</h3>
                 <p className="mb-4 text-sm text-white/60">{useCase.desc}</p>
                 <div className="space-y-2">
                   {useCase.signals.map((signal, j) => (
                     <div key={j} className="flex items-center gap-2">
-                      <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                      <div className="h-1 w-1 rounded-full bg-accent" />
                       <span className="text-xs text-white/50">{signal}</span>
                     </div>
                   ))}
@@ -332,7 +338,7 @@ export default function Home() {
       {/* Integration */}
       <section className="bg-white/[0.02] px-6 py-20">
         <div className="mx-auto max-w-5xl text-center">
-          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-emerald-500">DEVELOPER-FIRST</p>
+          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">DEVELOPER-FIRST</p>
           <h2 className="mb-6 text-4xl md:text-5xl font-bold">
             Deploy in hours, not months
           </h2>
@@ -342,7 +348,7 @@ export default function Home() {
 
           <div className="rounded-xl border border-white/10 bg-black p-6 text-left">
             <pre className="overflow-x-auto text-sm">
-              <code className="text-emerald-400">{`POST /api/v1/transactions
+              <code className="text-accent-hover">{`POST /api/v1/transactions
 Authorization: Bearer sk_live_...
 Content-Type: application/json
 
@@ -388,7 +394,7 @@ Content-Type: application/json
       {/* Comparison Table */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-emerald-500">WHY FRAUDIES</p>
+          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-accent">WHY FRAUDIES</p>
           <h2 className="mb-16 text-center text-4xl md:text-5xl font-bold">
             Built different
           </h2>
@@ -398,7 +404,7 @@ Content-Type: application/json
               <thead>
                 <tr className="border-b border-white/10 bg-white/[0.02]">
                   <th className="px-6 py-4 text-left text-sm font-medium text-white/60">Feature</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-emerald-500">Fraudies</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-accent">Fraudies</th>
                   <th className="px-6 py-4 text-center text-sm font-medium text-white/40">Legacy Vendors</th>
                   <th className="px-6 py-4 text-center text-sm font-medium text-white/40">In-house Build</th>
                 </tr>
@@ -415,7 +421,7 @@ Content-Type: application/json
                   <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4 text-sm text-white/80">{row.feature}</td>
                     <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
+                      <span className="inline-flex items-center gap-1 text-sm font-medium text-accent-hover">
                         <CheckCircle2 className="h-4 w-4" />
                         {row.fraudies}
                       </span>
@@ -433,7 +439,7 @@ Content-Type: application/json
       {/* Testimonials */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-6xl">
-          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-emerald-500">TRUSTED BY FINTECH LEADERS</p>
+          <p className="mb-4 text-center text-sm font-medium uppercase tracking-wider text-accent">TRUSTED BY FINTECH LEADERS</p>
           <h2 className="mb-16 text-center text-4xl md:text-5xl font-bold">
             Real results from real companies
           </h2>
@@ -466,7 +472,7 @@ Content-Type: application/json
                 <p className="mb-6 text-sm text-white/70 leading-relaxed flex-1">"{testimonial.quote}"</p>
                 <div className="border-t border-white/10 pt-4">
                   <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-semibold text-emerald-500">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent">
                       {testimonial.author.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -474,7 +480,7 @@ Content-Type: application/json
                       <div className="text-xs text-white/50">{testimonial.role}, {testimonial.company}</div>
                     </div>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent-hover">
                     <CheckCircle2 className="h-3 w-3" />
                     {testimonial.metric}
                   </div>
@@ -487,7 +493,7 @@ Content-Type: application/json
 
       {/* ROI Section */}
       <section className="px-6 py-20">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-12 text-center">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-accent/20 bg-accent/5 p-12 text-center">
           <h2 className="mb-4 text-3xl md:text-4xl font-bold">
             Pay for itself in week one
           </h2>
@@ -501,15 +507,15 @@ Content-Type: application/json
               <div className="text-3xl font-bold text-red-400">-$38,000</div>
               <div className="mt-2 text-sm text-white/60">Monthly fraud losses</div>
             </div>
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-6">
-              <div className="mb-2 text-sm text-emerald-500/80">WITH FRAUDIES</div>
-              <div className="text-3xl font-bold text-emerald-400">-$10,250</div>
+            <div className="rounded-lg border border-accent/20 bg-accent/10 p-6">
+              <div className="mb-2 text-sm text-accent/80">WITH FRAUDIES</div>
+              <div className="text-3xl font-bold text-accent-hover">-$10,250</div>
               <div className="mt-2 text-sm text-white/60">$2,500 subscription + $7,750 fraud</div>
             </div>
           </div>
           <Link 
-            href="/register" 
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-8 py-4 text-lg font-semibold text-black transition-all hover:bg-emerald-400"
+            href="/dashboard" 
+            className="inline-flex items-center gap-2 rounded-lg bg-accent px-8 py-4 text-lg font-semibold text-black transition-all hover:bg-accent-hover"
           >
             Calculate your ROI
             <ArrowRight className="h-5 w-5" />
@@ -528,8 +534,8 @@ Content-Type: application/json
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/register" 
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-8 py-4 text-lg font-semibold text-black transition-all hover:bg-emerald-400"
+              href="/dashboard" 
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-8 py-4 text-lg font-semibold text-black transition-all hover:bg-accent-hover"
             >
               Start free trial
               <ArrowRight className="h-5 w-5" />
@@ -593,8 +599,8 @@ Content-Type: application/json
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-                  <Shield className="h-5 w-5 text-emerald-500" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                  <Shield className="h-5 w-5 text-accent" />
                 </div>
                 <span className="text-xl font-bold text-white">Fraudies</span>
               </div>

@@ -1,27 +1,17 @@
 {
   "name": "fintech-fraudies",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "packageManager": "npm@11.14.1",
   "scripts": {
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend/api && npm run dev",
-    "dev:ml": "cd backend/ml-engine && .venv\\Scripts\\activate && uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --port 8000",
     "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend/api && npm run build",
-    "start:frontend": "cd frontend && npm start",
-    "start:backend": "cd backend/api && npm start",
-    "db:generate": "cd backend/database && npx prisma generate",
-    "db:migrate": "cd backend/database && npx prisma migrate dev",
-    "db:studio": "cd backend/database && npx prisma studio",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "install:all": "npm install && cd frontend && npm install && cd ../backend/api && npm install"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.0"
+    "generate:data": "cd backend && python -m scripts.generate_dataset",
+    "train": "cd backend && python -m scripts.train --force",
+    "test:backend": "cd backend && python -m pytest -q",
+    "install:frontend": "cd frontend && npm ci"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

@@ -5,9 +5,10 @@ import gsap from 'gsap';
 
 interface RiskScoreMeterProps {
   score: number; // 0.0 to 1.0
+  thresholds?: { flag: number; review: number };
 }
 
-export default function RiskScoreMeter({ score }: RiskScoreMeterProps) {
+export default function RiskScoreMeter({ score, thresholds = { flag: 0.5, review: 0.2 } }: RiskScoreMeterProps) {
   const circleRef = useRef<SVGCircleElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   
@@ -40,9 +41,9 @@ export default function RiskScoreMeter({ score }: RiskScoreMeterProps) {
   }, [score, circumference, strokeDashoffset, percentage]);
 
   const getColor = () => {
-    if (score >= 0.7) return 'stroke-red-500 text-red-500';
-    if (score >= 0.4) return 'stroke-amber-500 text-amber-500';
-    return 'stroke-emerald-500 text-emerald-500';
+    if (score >= thresholds.flag) return 'stroke-bad text-bad';
+    if (score >= thresholds.review) return 'stroke-warn text-warn';
+    return 'stroke-good text-good';
   };
 
   return (
@@ -53,7 +54,7 @@ export default function RiskScoreMeter({ score }: RiskScoreMeterProps) {
             cx="64"
             cy="64"
             r={radius}
-            className="stroke-zinc-800"
+            className="stroke-[#1e1e1e]"
             strokeWidth="8"
             fill="transparent"
           />
@@ -74,7 +75,7 @@ export default function RiskScoreMeter({ score }: RiskScoreMeterProps) {
           <span ref={textRef} className={`text-2xl font-bold ${getColor().split(' ')[1]}`}>
             0%
           </span>
-          <span className="text-[10px] uppercase text-zinc-500 font-semibold tracking-wider">
+          <span className="text-[10px] uppercase text-faint font-semibold tracking-wider">
             Risk Score
           </span>
         </div>
